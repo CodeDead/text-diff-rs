@@ -1,0 +1,12 @@
+[package]
+name = "text-diff"
+version = "0.1.0"
+edition = "2021"
+authors = ["CodeDead <admin@codedead.com>"]
+readme = "README.md"
+repository = "https://github.com/CodeDead/text-diff-rs"
+license-file = "LICENSE"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
