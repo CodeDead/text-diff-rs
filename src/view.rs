@@ -127,10 +127,6 @@ impl Sandbox for ApplicationContext {
                     }
                 }
 
-                for d in &diff {
-                    println!("{}", &d);
-                }
-
                 self.differences = diff;
             }
             Message::ThemeChanged(d) => self.theme = d,
@@ -154,7 +150,7 @@ impl Sandbox for ApplicationContext {
                         Some(self.theme),
                         Message::ThemeChanged,
                     )
-                    .style(self.theme),
+                        .style(self.theme),
                 )
             },
         );
@@ -165,18 +161,18 @@ impl Sandbox for ApplicationContext {
             &self.first_file,
             Message::FirstFileInputChanged,
         )
-        .padding(10)
-        .size(20)
-        .style(self.theme);
+            .padding(10)
+            .size(20)
+            .style(self.theme);
 
         let btn_select_first_file = Button::new(
             &mut self.btn_select_first_file,
             Text::new("...").horizontal_alignment(alignment::Horizontal::Center),
         )
-        .padding(10)
-        .min_width(60)
-        .on_press(Message::SelectFirstFilePressed)
-        .style(self.theme);
+            .padding(10)
+            .min_width(60)
+            .on_press(Message::SelectFirstFilePressed)
+            .style(self.theme);
 
         let second_file_input = TextInput::new(
             &mut self.second_file_input,
@@ -184,18 +180,18 @@ impl Sandbox for ApplicationContext {
             &self.second_file,
             Message::SecondFileInputChanged,
         )
-        .padding(10)
-        .size(20)
-        .style(self.theme);
+            .padding(10)
+            .size(20)
+            .style(self.theme);
 
         let btn_select_second_file = Button::new(
             &mut self.btn_select_second_file,
             Text::new("...").horizontal_alignment(alignment::Horizontal::Center),
         )
-        .padding(10)
-        .min_width(60)
-        .on_press(Message::SelectSecondFilePressed)
-        .style(self.theme);
+            .padding(10)
+            .min_width(60)
+            .on_press(Message::SelectSecondFilePressed)
+            .style(self.theme);
 
         let btn_compare = Button::new(&mut self.btn_compare, Text::new("Compare"))
             .padding(10)
