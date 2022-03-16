@@ -2,7 +2,8 @@ use iced::window;
 use iced::{Sandbox, Settings};
 
 mod view;
-
+mod style;
+mod filereader;
 pub fn main() -> iced::Result {
     view::ApplicationContext::run(Settings {
         id: Some(String::from("text-diff")),

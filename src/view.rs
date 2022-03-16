@@ -1,12 +1,15 @@
-use iced::alignment::{self};
+use crate::filereader::FileReader;
+use crate::style;
+use iced::alignment;
 use iced::{
-    button, text_input, Alignment, Button, Column, Container, Element, Length, Row, Sandbox, Text,
-    TextInput,
+    button, text_input, Alignment, Button, Column, Container, Element, Length, Radio, Row, Sandbox,
+    Text, TextInput,
 };
-use native_dialog::FileDialog;
+use native_dialog::{FileDialog, MessageDialog, MessageType};
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    ThemeChanged(style::Theme),
     FirstFileInputChanged(String),
     SecondFileInputChanged(String),
     SelectFirstFilePressed,
@@ -16,6 +19,7 @@ pub enum Message {
 
 #[derive(Default)]
 pub struct ApplicationContext {
+    pub theme: style::Theme,
     pub first_file: String,
     pub second_file: String,
     pub first_file_input: text_input::State,
@@ -23,6 +27,7 @@ pub struct ApplicationContext {
     pub btn_select_first_file: button::State,
     pub btn_select_second_file: button::State,
     pub btn_compare: button::State,
+    pub differences: Vec<String>,
 }
 
 impl Sandbox for ApplicationContext {
@@ -67,8 +72,42 @@ impl Sandbox for ApplicationContext {
                 self.second_file = path.into_os_string().into_string().unwrap();
             }
             Message::ComparePressed => {
-                println!("Hello from btnCompare");
+                if self.first_file.is_empty() && self.second_file.is_empty() {
+                    MessageDialog::new()
+                        .set_type(MessageType::Warning)
+                        .set_title("text-diff")
+                        .set_text("Please select two files first!")
+                        .show_alert()
+                        .unwrap();
+                    return;
+                }
+
+                let file_reader = FileReader::new();
+
+                let lines_first_file = file_reader.read_lines(&self.first_file);
+                let lines_second_file = file_reader.read_lines(&self.second_file);
+
+                let mut diff = vec![];
+                for f in &lines_first_file {
+                    let mut included = false;
+                    for d in &lines_second_file {
+                        if f.eq(d) {
+                            included = true;
+                        }
+                    }
+
+                    if !included {
+                        diff.push(String::from(f));
+                    }
+                }
+
+                for d in &diff {
+                    println!("{}", &d);
+                }
+
+                self.differences = diff;
             }
+            Message::ThemeChanged(d) => self.theme = d,
         };
     }
 
@@ -79,6 +118,21 @@ impl Sandbox for ApplicationContext {
             .color([0.5, 0.5, 0.5])
             .horizontal_alignment(alignment::Horizontal::Center);
 
+        let choose_theme = style::Theme::ALL.iter().fold(
+            Column::new().spacing(10).push(Text::new("Choose a theme:")),
+            |column, theme| {
+                column.push(
+                    Radio::new(
+                        *theme,
+                        format!("{:?}", theme),
+                        Some(self.theme),
+                        Message::ThemeChanged,
+                    )
+                    .style(self.theme),
+                )
+            },
+        );
+
         let first_file_input = TextInput::new(
             &mut self.first_file_input,
             "/path/to/first/file.txt",
@@ -86,7 +140,8 @@ impl Sandbox for ApplicationContext {
             Message::FirstFileInputChanged,
         )
         .padding(10)
-        .size(20);
+        .size(20)
+        .style(self.theme);
 
         let btn_select_first_file = Button::new(
             &mut self.btn_select_first_file,
@@ -94,7 +149,8 @@ impl Sandbox for ApplicationContext {
         )
         .padding(10)
         .min_width(60)
-        .on_press(Message::SelectFirstFilePressed);
+        .on_press(Message::SelectFirstFilePressed)
+        .style(self.theme);
 
         let second_file_input = TextInput::new(
             &mut self.second_file_input,
@@ -103,7 +159,8 @@ impl Sandbox for ApplicationContext {
             Message::SecondFileInputChanged,
         )
         .padding(10)
-        .size(20);
+        .size(20)
+        .style(self.theme);
 
         let btn_select_second_file = Button::new(
             &mut self.btn_select_second_file,
@@ -111,17 +168,20 @@ impl Sandbox for ApplicationContext {
         )
         .padding(10)
         .min_width(60)
-        .on_press(Message::SelectSecondFilePressed);
+        .on_press(Message::SelectSecondFilePressed)
+        .style(self.theme);
 
         let btn_compare = Button::new(&mut self.btn_compare, Text::new("Compare"))
             .padding(10)
-            .on_press(Message::ComparePressed);
+            .on_press(Message::ComparePressed)
+            .style(self.theme);
 
         let content = Column::new()
             .spacing(15)
             .padding(20)
             .max_width(800)
             .push(title)
+            .push(choose_theme)
             .push(
                 Row::new()
                     .spacing(10)
@@ -149,6 +209,7 @@ impl Sandbox for ApplicationContext {
             .height(Length::Fill)
             .center_x()
             .center_y()
+            .style(self.theme)
             .into()
     }
 }
