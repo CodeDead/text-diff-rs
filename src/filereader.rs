@@ -23,9 +23,9 @@ impl FileReader {
     }
 
     /// Read the lines of a file
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `path` - The path of the file that should be read
     ///
     /// # Example
@@ -36,17 +36,25 @@ impl FileReader {
     ///
     /// # Returns
     ///
-    /// A `Vec` that contains all the lines in the specified file
-    pub fn read_lines(&self, path: &str) -> Vec<String> {
-        let file = File::open(path).unwrap();
+    /// The `Vec` that contains all the lines in the specified file or an `Error`
+    pub fn read_lines(&self, path: &str) -> Result<Vec<String>, std::io::Error> {
+        let file = File::open(path);
+        let file = match file {
+            Ok(d) => d,
+            Err(e) => return Err(e),
+        };
+
         let reader = BufReader::new(file);
 
         let mut lines = vec![];
         for (_index, line) in reader.lines().enumerate() {
-            let line = line.unwrap();
+            let line = match line {
+                Ok(d) => d,
+                Err(e) => return Err(e),
+            };
             lines.push(line);
         }
 
-        lines
+        Ok(lines)
     }
 }

@@ -72,7 +72,7 @@ impl Sandbox for ApplicationContext {
                 self.second_file = path.into_os_string().into_string().unwrap();
             }
             Message::ComparePressed => {
-                if self.first_file.is_empty() && self.second_file.is_empty() {
+                if self.first_file.is_empty() || self.second_file.is_empty() {
                     MessageDialog::new()
                         .set_type(MessageType::Warning)
                         .set_title("text-diff")
@@ -86,6 +86,32 @@ impl Sandbox for ApplicationContext {
 
                 let lines_first_file = file_reader.read_lines(&self.first_file);
                 let lines_second_file = file_reader.read_lines(&self.second_file);
+
+                let lines_first_file = match lines_first_file {
+                    Ok(d) => d,
+                    Err(e) => {
+                        MessageDialog::new()
+                            .set_type(MessageType::Error)
+                            .set_title("text-diff")
+                            .set_text(&format!("Error while reading file!\n{}", e))
+                            .show_alert()
+                            .unwrap();
+                        return;
+                    }
+                };
+
+                let lines_second_file = match lines_second_file {
+                    Ok(d) => d,
+                    Err(e) => {
+                        MessageDialog::new()
+                            .set_type(MessageType::Error)
+                            .set_title("text-diff")
+                            .set_text(&format!("Error while reading file!\n{}", e))
+                            .show_alert()
+                            .unwrap();
+                        return;
+                    }
+                };
 
                 let mut diff = vec![];
                 for f in &lines_first_file {
