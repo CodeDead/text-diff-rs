@@ -202,7 +202,7 @@ impl Sandbox for ApplicationContext {
             .on_press(Message::ComparePressed)
             .style(self.theme);
 
-        let content = Column::new()
+        let mut content = Column::new()
             .spacing(15)
             .padding(20)
             .max_width(800)
@@ -229,6 +229,17 @@ impl Sandbox for ApplicationContext {
                         .push(btn_compare),
                 ),
             );
+
+        if !self.differences.is_empty() {
+            let choose_theme = self.differences.iter().fold(
+                Column::new().spacing(10).push(Text::new("Differences:")),
+                |column, theme| {
+                    column.push(Text::new(format!("{}", theme)))
+                },
+            );
+
+            content = content.push(choose_theme);
+        }
 
         Container::new(content)
             .width(Length::Fill)
