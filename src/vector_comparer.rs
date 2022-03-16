@@ -18,7 +18,7 @@ impl IVectorComparer<String> for VectorComparer<String> {
     /// let vector_comparer: VectorComparer<String> = IVectorComparer::<String>::new(vec![], vec![]);
     /// ```
     ///
-    /// # Retuns
+    /// # Returns
     ///
     /// A `VectorComparer` that can be used to compare two `Vec` structs of type `String`
     fn new(vec1: Vec<String>, vec2: Vec<String>) -> VectorComparer<String> {
