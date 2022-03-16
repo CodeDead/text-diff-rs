@@ -1,6 +1,6 @@
 use crate::filereader::FileReader;
 use crate::style;
-use iced::alignment;
+use iced::{alignment, scrollable, Rule};
 use iced::{
     button, text_input, Alignment, Button, Column, Container, Element, Length, Radio, Row, Sandbox,
     Text, TextInput,
@@ -27,6 +27,7 @@ pub struct ApplicationContext {
     pub btn_select_first_file: button::State,
     pub btn_select_second_file: button::State,
     pub btn_compare: button::State,
+    pub scrollable: scrollable::State,
     pub differences: Vec<String>,
 }
 
@@ -127,6 +128,22 @@ impl Sandbox for ApplicationContext {
                     }
                 }
 
+                for f in &lines_second_file {
+                    let mut included = false;
+                    for d in &lines_first_file {
+                        if f.eq(d) {
+                            included = true;
+                        }
+                    }
+
+                    if !included {
+                        let n = String::from(f);
+                        if !diff.contains(&n) {
+                            diff.push(n);
+                        }
+                    }
+                }
+
                 self.differences = diff;
             }
             Message::ThemeChanged(d) => self.theme = d,
@@ -136,21 +153,24 @@ impl Sandbox for ApplicationContext {
     fn view(&mut self) -> Element<'_, Self::Message> {
         let title = Text::new("text-diff")
             .width(Length::Fill)
-            .size(100)
+            .size(85)
             .color([0.5, 0.5, 0.5])
             .horizontal_alignment(alignment::Horizontal::Center);
 
         let choose_theme = style::Theme::ALL.iter().fold(
-            Column::new().spacing(10).push(Text::new("Choose a theme:")),
-            |column, theme| {
-                column.push(
+            Row::new()
+                .width(Length::Fill)
+                .align_items(Alignment::Center)
+                .spacing(10),
+            |row, theme| {
+                row.push(
                     Radio::new(
                         *theme,
                         format!("{:?}", theme),
                         Some(self.theme),
                         Message::ThemeChanged,
                     )
-                        .style(self.theme),
+                    .style(self.theme),
                 )
             },
         );
@@ -161,18 +181,18 @@ impl Sandbox for ApplicationContext {
             &self.first_file,
             Message::FirstFileInputChanged,
         )
-            .padding(10)
-            .size(20)
-            .style(self.theme);
+        .padding(10)
+        .size(20)
+        .style(self.theme);
 
         let btn_select_first_file = Button::new(
             &mut self.btn_select_first_file,
             Text::new("...").horizontal_alignment(alignment::Horizontal::Center),
         )
-            .padding(10)
-            .min_width(60)
-            .on_press(Message::SelectFirstFilePressed)
-            .style(self.theme);
+        .padding(10)
+        .min_width(60)
+        .on_press(Message::SelectFirstFilePressed)
+        .style(self.theme);
 
         let second_file_input = TextInput::new(
             &mut self.second_file_input,
@@ -180,18 +200,18 @@ impl Sandbox for ApplicationContext {
             &self.second_file,
             Message::SecondFileInputChanged,
         )
-            .padding(10)
-            .size(20)
-            .style(self.theme);
+        .padding(10)
+        .size(20)
+        .style(self.theme);
 
         let btn_select_second_file = Button::new(
             &mut self.btn_select_second_file,
             Text::new("...").horizontal_alignment(alignment::Horizontal::Center),
         )
-            .padding(10)
-            .min_width(60)
-            .on_press(Message::SelectSecondFilePressed)
-            .style(self.theme);
+        .padding(10)
+        .min_width(60)
+        .on_press(Message::SelectSecondFilePressed)
+        .style(self.theme);
 
         let btn_compare = Button::new(&mut self.btn_compare, Text::new("Compare"))
             .padding(10)
@@ -203,7 +223,7 @@ impl Sandbox for ApplicationContext {
             .padding(20)
             .max_width(800)
             .push(title)
-            .push(choose_theme)
+            .push(Rule::horizontal(20).style(self.theme))
             .push(
                 Row::new()
                     .spacing(10)
@@ -228,14 +248,20 @@ impl Sandbox for ApplicationContext {
 
         if !self.differences.is_empty() {
             let choose_theme = self.differences.iter().fold(
-                Column::new().spacing(10).push(Text::new("Differences:")),
-                |column, theme| {
-                    column.push(Text::new(format!("{}", theme)))
-                },
+                Column::new()
+                    .spacing(10)
+                    .push(Text::new("Differences:").size(30)),
+                |column, theme| column.push(Text::new(format!("{}", theme))),
             );
 
-            content = content.push(choose_theme);
+            content = content
+                .push(Rule::horizontal(20).style(self.theme))
+                .push(choose_theme);
         }
+
+        content = content
+            .push(Rule::horizontal(20).style(self.theme))
+            .push(choose_theme);
 
         Container::new(content)
             .width(Length::Fill)
