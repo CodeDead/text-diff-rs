@@ -1,5 +1,6 @@
 use crate::filereader::FileReader;
 use crate::style;
+use crate::vector_comparer::{IVectorComparer, VectorComparer};
 use iced::{alignment, scrollable, Rule};
 use iced::{
     button, text_input, Alignment, Button, Column, Container, Element, Length, Radio, Row, Sandbox,
@@ -15,6 +16,7 @@ pub enum Message {
     SelectFirstFilePressed,
     SelectSecondFilePressed,
     ComparePressed,
+    ClearComparePressed,
 }
 
 #[derive(Default)]
@@ -27,8 +29,10 @@ pub struct ApplicationContext {
     pub btn_select_first_file: button::State,
     pub btn_select_second_file: button::State,
     pub btn_compare: button::State,
+    pub btn_clean_compare: button::State,
     pub scrollable: scrollable::State,
     pub differences: Vec<String>,
+    pub has_compared: bool,
 }
 
 impl Sandbox for ApplicationContext {
@@ -49,6 +53,7 @@ impl Sandbox for ApplicationContext {
             Message::SelectFirstFilePressed => {
                 let path = FileDialog::new()
                     .add_filter("Text file", &["txt"])
+                    .add_filter("All files", &["*"])
                     .show_open_single_file()
                     .unwrap();
 
@@ -62,6 +67,7 @@ impl Sandbox for ApplicationContext {
             Message::SelectSecondFilePressed => {
                 let path = FileDialog::new()
                     .add_filter("Text file", &["txt"])
+                    .add_filter("All files", &["*"])
                     .show_open_single_file()
                     .unwrap();
 
@@ -94,7 +100,7 @@ impl Sandbox for ApplicationContext {
                         MessageDialog::new()
                             .set_type(MessageType::Error)
                             .set_title("text-diff")
-                            .set_text(&format!("Error while reading file!\n{}", e))
+                            .set_text(&format!("Error while reading file {}!\n{}", &self.first_file, e))
                             .show_alert()
                             .unwrap();
                         return;
@@ -107,46 +113,26 @@ impl Sandbox for ApplicationContext {
                         MessageDialog::new()
                             .set_type(MessageType::Error)
                             .set_title("text-diff")
-                            .set_text(&format!("Error while reading file!\n{}", e))
+                            .set_text(&format!("Error while reading file {}!\n{}", &self.second_file, e))
                             .show_alert()
                             .unwrap();
                         return;
                     }
                 };
 
-                let mut diff = vec![];
-                for f in &lines_first_file {
-                    let mut included = false;
-                    for d in &lines_second_file {
-                        if f.eq(d) {
-                            included = true;
-                        }
-                    }
+                let vector_comparer: VectorComparer<String> =
+                    IVectorComparer::<String>::new(lines_first_file, lines_second_file);
 
-                    if !included {
-                        diff.push(String::from(f));
-                    }
-                }
-
-                for f in &lines_second_file {
-                    let mut included = false;
-                    for d in &lines_first_file {
-                        if f.eq(d) {
-                            included = true;
-                        }
-                    }
-
-                    if !included {
-                        let n = String::from(f);
-                        if !diff.contains(&n) {
-                            diff.push(n);
-                        }
-                    }
-                }
-
-                self.differences = diff;
+                self.differences = vector_comparer.get_differences();
+                self.has_compared = true;
             }
             Message::ThemeChanged(d) => self.theme = d,
+            Message::ClearComparePressed => {
+                self.first_file = String::new();
+                self.second_file = String::new();
+                self.has_compared = false;
+                self.differences = vec![];
+            }
         };
     }
 
@@ -213,10 +199,43 @@ impl Sandbox for ApplicationContext {
         .on_press(Message::SelectSecondFilePressed)
         .style(self.theme);
 
-        let btn_compare = Button::new(&mut self.btn_compare, Text::new("Compare"))
+        let btn_compare = Button::new(
+            &mut self.btn_compare,
+            Text::new("Compare").horizontal_alignment(alignment::Horizontal::Center),
+        )
+        .padding(10)
+        .min_width(100)
+        .on_press(Message::ComparePressed)
+        .style(self.theme);
+
+        let mut compare_row = Row::new().spacing(10);
+
+        if self.has_compared {
+            let btn_clean_compare = Button::new(
+                &mut self.btn_clean_compare,
+                Text::new("Clear").horizontal_alignment(alignment::Horizontal::Center),
+            )
             .padding(10)
-            .on_press(Message::ComparePressed)
+            .min_width(100)
+            .on_press(Message::ClearComparePressed)
             .style(self.theme);
+
+            compare_row = compare_row.push(
+                Column::new()
+                    .width(Length::Fill)
+                    .align_items(Alignment::Start)
+                    .spacing(20)
+                    .push(btn_clean_compare),
+            );
+        }
+
+        compare_row = compare_row.push(
+            Column::new()
+                .width(Length::Fill)
+                .align_items(Alignment::End)
+                .spacing(20)
+                .push(btn_compare),
+        );
 
         let mut content = Column::new()
             .spacing(15)
@@ -236,27 +255,24 @@ impl Sandbox for ApplicationContext {
                     .push(second_file_input)
                     .push(btn_select_second_file),
             )
-            .push(
-                Row::new().spacing(10).push(
-                    Column::new()
-                        .width(Length::Fill)
-                        .align_items(Alignment::End)
-                        .spacing(20)
-                        .push(btn_compare),
-                ),
-            );
+            .push(compare_row);
 
-        if !self.differences.is_empty() {
-            let choose_theme = self.differences.iter().fold(
+        if self.has_compared {
+            let mut diff_text = Text::new("Differences:");
+            if self.differences.is_empty() {
+                diff_text = Text::new("No differences detected!")
+            }
+            
+            let diff_column = self.differences.iter().fold(
                 Column::new()
                     .spacing(10)
-                    .push(Text::new("Differences:").size(30)),
+                    .push(diff_text.size(30)),
                 |column, theme| column.push(Text::new(format!("{}", theme))),
             );
 
             content = content
                 .push(Rule::horizontal(20).style(self.theme))
-                .push(choose_theme);
+                .push(diff_column);
         }
 
         content = content

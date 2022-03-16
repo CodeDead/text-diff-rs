@@ -4,6 +4,7 @@ use iced::{Sandbox, Settings};
 mod view;
 mod style;
 mod filereader;
+mod vector_comparer;
 
 pub fn main() -> iced::Result {
     view::ApplicationContext::run(Settings {
