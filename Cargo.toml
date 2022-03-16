@@ -10,3 +10,11 @@ license-file = "LICENSE"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+iced = { git = "https://github.com/iced-rs/iced" }
+native-dialog = "0.6.3"
+
+[profile.release]
+lto = true
+opt-level = "s"
+panic = "abort"
+codegen-units = 1
