@@ -5,7 +5,7 @@ use crate::filereader::FileReader;
 use crate::style;
 use crate::vector_comparer::{IVectorComparer, VectorComparer};
 use crate::vector_exporter::{ExportType, IVectorExporter, VectorExporter};
-use iced::{alignment, scrollable, Rule};
+use iced::{alignment, scrollable, Rule, Scrollable};
 use iced::{
     button, text_input, Alignment, Button, Column, Container, Element, Length, Radio, Row, Sandbox,
     Text, TextInput,
@@ -331,13 +331,21 @@ impl Sandbox for ApplicationContext {
             }
 
             let diff_column = self.differences.iter().fold(
-                Column::new().spacing(10).push(diff_text.size(30)),
+                Column::new().spacing(10),
                 |column, theme| column.push(Text::new(format!("- {}", theme))),
             );
 
+            let scroll_container = Column::new().width(Length::Fill).push(diff_column);
+            let scroll = Scrollable::new(&mut self.scrollable)
+                .push(Container::new(scroll_container)
+                .width(Length::Fill))
+                .max_height(150)
+                .style(self.theme);
+
             content = content
                 .push(Rule::horizontal(20).style(self.theme))
-                .push(diff_column);
+                .push(diff_text.size(30))
+                .push(scroll);
 
             if !self.differences.is_empty() {
                 let btn_export = Button::new(
