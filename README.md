@@ -4,7 +4,7 @@
 ![GitHub](https://img.shields.io/badge/language-Rust-green)
 ![GitHub](https://img.shields.io/github/license/CodeDead/text-diff-rs)
 
-![text-diff](https://i.imgur.com/PxbT90B.png)
+![text-diff](https://i.imgur.com/VrcSyMD.png)
 
 `text-diff` can be used to compare two text files and output the difference between them. `text-diff` was written in `Rust` and offers a simple and intuitive user-interface for Windows, Linux and macOS.
 
@@ -40,6 +40,8 @@ cargo run
 * [Rust](https://www.rust-lang.org/)
 * [iced](https://iced.rs/)
 * [native-dialog](https://github.com/balthild/native-dialog-rs)
+* [serde](https://serde.rs/)
+* [serde_json](https://serde.rs/)
 
 ## About
 
