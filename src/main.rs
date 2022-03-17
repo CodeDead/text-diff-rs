@@ -11,7 +11,7 @@ pub fn main() -> iced::Result {
     view::ApplicationContext::run(Settings {
         id: Some(String::from("text-diff")),
         window: window::Settings {
-            size: (800, 600),
+            size: (800, 800),
             position: window::Position::Centered,
             ..window::Settings::default()
         },

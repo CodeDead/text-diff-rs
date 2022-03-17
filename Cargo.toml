@@ -3,9 +3,11 @@ name = "text-diff"
 version = "0.1.0"
 edition = "2021"
 authors = ["CodeDead <admin@codedead.com>"]
+description = "A cross-platform GUI for comparing two text files"
 readme = "README.md"
 repository = "https://github.com/CodeDead/text-diff-rs"
 license-file = "LICENSE"
+keywords = ["gui", "ui", "text-diff", "interface", "codedead", "diff", "difference"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
