@@ -1,6 +1,10 @@
+use std::ffi::OsStr;
+use std::path::Path;
+
 use crate::filereader::FileReader;
 use crate::style;
 use crate::vector_comparer::{IVectorComparer, VectorComparer};
+use crate::vector_exporter::{ExportType, IVectorExporter, VectorExporter};
 use iced::{alignment, scrollable, Rule};
 use iced::{
     button, text_input, Alignment, Button, Column, Container, Element, Length, Radio, Row, Sandbox,
@@ -17,6 +21,7 @@ pub enum Message {
     SelectSecondFilePressed,
     ComparePressed,
     ClearComparePressed,
+    ExportPressed,
 }
 
 #[derive(Default)]
@@ -30,6 +35,7 @@ pub struct ApplicationContext {
     pub btn_select_second_file: button::State,
     pub btn_compare: button::State,
     pub btn_clean_compare: button::State,
+    pub btn_export: button::State,
     pub scrollable: scrollable::State,
     pub differences: Vec<String>,
     pub has_compared: bool,
@@ -100,7 +106,10 @@ impl Sandbox for ApplicationContext {
                         MessageDialog::new()
                             .set_type(MessageType::Error)
                             .set_title("text-diff")
-                            .set_text(&format!("Error while reading file {}!\n{}", &self.first_file, e))
+                            .set_text(&format!(
+                                "Error while reading file {}!\n{}",
+                                &self.first_file, e
+                            ))
                             .show_alert()
                             .unwrap();
                         return;
@@ -113,7 +122,10 @@ impl Sandbox for ApplicationContext {
                         MessageDialog::new()
                             .set_type(MessageType::Error)
                             .set_title("text-diff")
-                            .set_text(&format!("Error while reading file {}!\n{}", &self.second_file, e))
+                            .set_text(&format!(
+                                "Error while reading file {}!\n{}",
+                                &self.second_file, e
+                            ))
                             .show_alert()
                             .unwrap();
                         return;
@@ -132,6 +144,61 @@ impl Sandbox for ApplicationContext {
                 self.second_file = String::new();
                 self.has_compared = false;
                 self.differences = vec![];
+            }
+            Message::ExportPressed => {
+                let path = FileDialog::new()
+                    .add_filter("Text file", &["txt"])
+                    .add_filter("Csv file", &["csv"])
+                    .add_filter("Json file", &["json"])
+                    .show_save_single_file()
+                    .unwrap();
+
+                let path = match path {
+                    Some(path) => path,
+                    None => return,
+                };
+
+                let path = path.into_os_string().into_string().unwrap();
+
+                let extension = match Path::new(&path).extension().and_then(OsStr::to_str) {
+                    Some(x) => x,
+                    None => return,
+                };
+
+                let extension = match extension.to_lowercase().as_str() {
+                    "txt" => ExportType::Text,
+                    "csv" => ExportType::Csv,
+                    "json" => ExportType::Json,
+                    _ => ExportType::default(),
+                };
+
+                let vec_exporter: VectorExporter<String> =
+                    IVectorExporter::<String>::new(self.differences.clone(), extension, &path);
+
+                match vec_exporter.export() {
+                    Ok(_) => return,
+                    Err(e) => match e {
+                        crate::vector_exporter::ExportError::IoError(e) => {
+                            MessageDialog::new()
+                                .set_type(MessageType::Error)
+                                .set_title("text-diff")
+                                .set_text(&format!("Error while writing to file {}!\n{}", &path, e))
+                                .show_alert()
+                                .unwrap();
+                        }
+                        crate::vector_exporter::ExportError::JsonError(e) => {
+                            MessageDialog::new()
+                                .set_type(MessageType::Error)
+                                .set_title("text-diff")
+                                .set_text(&format!(
+                                    "Error while creating JSON for file {}!\n{}",
+                                    &path, e
+                                ))
+                                .show_alert()
+                                .unwrap();
+                        }
+                    },
+                };
             }
         };
     }
@@ -262,17 +329,34 @@ impl Sandbox for ApplicationContext {
             if self.differences.is_empty() {
                 diff_text = Text::new("No differences detected!")
             }
-            
+
             let diff_column = self.differences.iter().fold(
-                Column::new()
-                    .spacing(10)
-                    .push(diff_text.size(30)),
-                |column, theme| column.push(Text::new(format!("{}", theme))),
+                Column::new().spacing(10).push(diff_text.size(30)),
+                |column, theme| column.push(Text::new(format!("- {}", theme))),
             );
 
             content = content
                 .push(Rule::horizontal(20).style(self.theme))
                 .push(diff_column);
+
+            if !self.differences.is_empty() {
+                let btn_export = Button::new(
+                    &mut self.btn_export,
+                    Text::new("Export").horizontal_alignment(alignment::Horizontal::Center),
+                )
+                .padding(10)
+                .min_width(100)
+                .on_press(Message::ExportPressed)
+                .style(self.theme);
+
+                content = content.push(
+                    Column::new()
+                        .width(Length::Fill)
+                        .align_items(Alignment::End)
+                        .spacing(20)
+                        .push(btn_export),
+                );
+            }
         }
 
         content = content

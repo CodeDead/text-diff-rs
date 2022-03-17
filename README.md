@@ -40,6 +40,8 @@ cargo run
 * [Rust](https://www.rust-lang.org/)
 * [iced](https://iced.rs/)
 * [native-dialog](https://github.com/balthild/native-dialog-rs)
+* [serde](https://serde.rs/)
+* [serde_json](https://serde.rs/)
 
 ## About
 
