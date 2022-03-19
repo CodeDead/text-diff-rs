@@ -4,6 +4,7 @@
 ![GitHub](https://img.shields.io/badge/language-Rust-green)
 ![GitHub](https://img.shields.io/github/license/CodeDead/text-diff-rs)
 [![Deploy](https://github.com/CodeDead/text-diff-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/CodeDead/text-diff-rs/actions/workflows/rust.yml)
+[![Test](https://github.com/CodeDead/text-diff-rs/actions/workflows/test.yml/badge.svg)](https://github.com/CodeDead/text-diff-rs/actions/workflows/test.yml)
 
 ![text-diff](https://i.imgur.com/VrcSyMD.png)
 

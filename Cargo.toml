@@ -1,6 +1,6 @@
 [package]
 name = "text-diff"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["CodeDead <admin@codedead.com>"]
 description = "A cross-platform GUI for comparing two text files"
