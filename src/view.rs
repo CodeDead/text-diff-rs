@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::path::Path;
 
 use crate::file_reader::FileReader;
@@ -63,6 +63,35 @@ impl ApplicationContext {
             .show_alert()
             .unwrap();
     }
+
+    /// Open the file dialog to select a file
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let selected_file_result: Result<Option<String>, OsString> = open_file_dialog()
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The optional `String` that contains the path of the selected file or an `OsString` error
+    fn open_file_dialog() -> Result<Option<String>, OsString> {
+        let path = FileDialog::new()
+            .add_filter("Text file", &["txt"])
+            .add_filter("All files", &["*"])
+            .show_open_single_file()
+            .unwrap();
+
+        let path = match path {
+            Some(path) => path,
+            None => return Ok(None),
+        };
+
+        match path.into_os_string().into_string() {
+            Ok(d) => Ok(Some(d)),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 impl Sandbox for ApplicationContext {
@@ -81,32 +110,42 @@ impl Sandbox for ApplicationContext {
             Message::FirstFileInputChanged(d) => self.first_file = d,
             Message::SecondFileInputChanged(d) => self.second_file = d,
             Message::SelectFirstFilePressed => {
-                let path = FileDialog::new()
-                    .add_filter("Text file", &["txt"])
-                    .add_filter("All files", &["*"])
-                    .show_open_single_file()
-                    .unwrap();
-
-                let path = match path {
-                    Some(path) => path,
-                    None => return,
+                let path = match ApplicationContext::open_file_dialog() {
+                    Ok(res) => match res {
+                        Some(d) => d,
+                        None => return,
+                    },
+                    Err(e) => {
+                        ApplicationContext::display_alert(
+                            &self,
+                            "text-diff",
+                            &format!("Error while selecting file!\n{:?}", e),
+                            MessageType::Error,
+                        );
+                        return;
+                    }
                 };
 
-                self.first_file = path.into_os_string().into_string().unwrap();
+                self.first_file = path;
             }
             Message::SelectSecondFilePressed => {
-                let path = FileDialog::new()
-                    .add_filter("Text file", &["txt"])
-                    .add_filter("All files", &["*"])
-                    .show_open_single_file()
-                    .unwrap();
-
-                let path = match path {
-                    Some(path) => path,
-                    None => return,
+                let path = match ApplicationContext::open_file_dialog() {
+                    Ok(res) => match res {
+                        Some(d) => d,
+                        None => return,
+                    },
+                    Err(e) => {
+                        ApplicationContext::display_alert(
+                            &self,
+                            "text-diff",
+                            &format!("Error while selecting file!\n{:?}", e),
+                            MessageType::Error,
+                        );
+                        return;
+                    }
                 };
 
-                self.second_file = path.into_os_string().into_string().unwrap();
+                self.second_file = path;
             }
             Message::ComparePressed => {
                 if self.first_file.is_empty() || self.second_file.is_empty() {
