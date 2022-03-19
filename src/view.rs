@@ -1,7 +1,7 @@
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::path::Path;
 
-use crate::filereader::FileReader;
+use crate::file_reader::FileReader;
 use crate::style;
 use crate::vector_comparer::{IVectorComparer, VectorComparer};
 use crate::vector_exporter::{ExportType, IVectorExporter, VectorExporter};
@@ -41,6 +41,59 @@ pub struct ApplicationContext {
     pub has_compared: bool,
 }
 
+impl ApplicationContext {
+    /// Display a native alert
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// display_alert("hello", "world", MessageType::Info)
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `title` - The alert title
+    /// * `content` - the content of the alert
+    /// * `message_type` - The `MessageType` for the alert
+    fn display_alert(&self, title: &str, content: &str, message_type: MessageType) {
+        MessageDialog::new()
+            .set_type(message_type)
+            .set_title(title)
+            .set_text(content)
+            .show_alert()
+            .unwrap();
+    }
+
+    /// Open the file dialog to select a file
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let selected_file_result: Result<Option<String>, OsString> = open_file_dialog()
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The optional `String` that contains the path of the selected file or an `OsString` error
+    fn open_file_dialog() -> Result<Option<String>, OsString> {
+        let path = FileDialog::new()
+            .add_filter("Text file", &["txt"])
+            .add_filter("All files", &["*"])
+            .show_open_single_file()
+            .unwrap();
+
+        let path = match path {
+            Some(path) => path,
+            None => return Ok(None),
+        };
+
+        match path.into_os_string().into_string() {
+            Ok(d) => Ok(Some(d)),
+            Err(e) => Err(e),
+        }
+    }
+}
+
 impl Sandbox for ApplicationContext {
     type Message = Message;
 
@@ -57,41 +110,51 @@ impl Sandbox for ApplicationContext {
             Message::FirstFileInputChanged(d) => self.first_file = d,
             Message::SecondFileInputChanged(d) => self.second_file = d,
             Message::SelectFirstFilePressed => {
-                let path = FileDialog::new()
-                    .add_filter("Text file", &["txt"])
-                    .add_filter("All files", &["*"])
-                    .show_open_single_file()
-                    .unwrap();
-
-                let path = match path {
-                    Some(path) => path,
-                    None => return,
+                let path = match ApplicationContext::open_file_dialog() {
+                    Ok(res) => match res {
+                        Some(d) => d,
+                        None => return,
+                    },
+                    Err(e) => {
+                        ApplicationContext::display_alert(
+                            &self,
+                            "text-diff",
+                            &format!("Error while selecting file!\n{:?}", e),
+                            MessageType::Error,
+                        );
+                        return;
+                    }
                 };
 
-                self.first_file = path.into_os_string().into_string().unwrap();
+                self.first_file = path;
             }
             Message::SelectSecondFilePressed => {
-                let path = FileDialog::new()
-                    .add_filter("Text file", &["txt"])
-                    .add_filter("All files", &["*"])
-                    .show_open_single_file()
-                    .unwrap();
-
-                let path = match path {
-                    Some(path) => path,
-                    None => return,
+                let path = match ApplicationContext::open_file_dialog() {
+                    Ok(res) => match res {
+                        Some(d) => d,
+                        None => return,
+                    },
+                    Err(e) => {
+                        ApplicationContext::display_alert(
+                            &self,
+                            "text-diff",
+                            &format!("Error while selecting file!\n{:?}", e),
+                            MessageType::Error,
+                        );
+                        return;
+                    }
                 };
 
-                self.second_file = path.into_os_string().into_string().unwrap();
+                self.second_file = path;
             }
             Message::ComparePressed => {
                 if self.first_file.is_empty() || self.second_file.is_empty() {
-                    MessageDialog::new()
-                        .set_type(MessageType::Warning)
-                        .set_title("text-diff")
-                        .set_text("Please select two files first!")
-                        .show_alert()
-                        .unwrap();
+                    ApplicationContext::display_alert(
+                        &self,
+                        "text-diff",
+                        "Please select two files first!",
+                        MessageType::Warning,
+                    );
                     return;
                 }
 
@@ -103,15 +166,12 @@ impl Sandbox for ApplicationContext {
                 let lines_first_file = match lines_first_file {
                     Ok(d) => d,
                     Err(e) => {
-                        MessageDialog::new()
-                            .set_type(MessageType::Error)
-                            .set_title("text-diff")
-                            .set_text(&format!(
-                                "Error while reading file {}!\n{}",
-                                &self.first_file, e
-                            ))
-                            .show_alert()
-                            .unwrap();
+                        ApplicationContext::display_alert(
+                            &self,
+                            "text-diff",
+                            &format!("Error while reading file {}!\n{}", &self.first_file, e),
+                            MessageType::Error,
+                        );
                         return;
                     }
                 };
@@ -119,15 +179,12 @@ impl Sandbox for ApplicationContext {
                 let lines_second_file = match lines_second_file {
                     Ok(d) => d,
                     Err(e) => {
-                        MessageDialog::new()
-                            .set_type(MessageType::Error)
-                            .set_title("text-diff")
-                            .set_text(&format!(
-                                "Error while reading file {}!\n{}",
-                                &self.second_file, e
-                            ))
-                            .show_alert()
-                            .unwrap();
+                        ApplicationContext::display_alert(
+                            &self,
+                            "text-diff",
+                            &format!("Error while reading file {}!\n{}", &self.second_file, e),
+                            MessageType::Error,
+                        );
                         return;
                     }
                 };
@@ -179,23 +236,20 @@ impl Sandbox for ApplicationContext {
                     Ok(_) => return,
                     Err(e) => match e {
                         crate::vector_exporter::ExportError::IoError(e) => {
-                            MessageDialog::new()
-                                .set_type(MessageType::Error)
-                                .set_title("text-diff")
-                                .set_text(&format!("Error while writing to file {}!\n{}", &path, e))
-                                .show_alert()
-                                .unwrap();
+                            ApplicationContext::display_alert(
+                                &self,
+                                "text-diff",
+                                &format!("Error while writing to file {}!\n{}", &path, e),
+                                MessageType::Error,
+                            );
                         }
                         crate::vector_exporter::ExportError::JsonError(e) => {
-                            MessageDialog::new()
-                                .set_type(MessageType::Error)
-                                .set_title("text-diff")
-                                .set_text(&format!(
-                                    "Error while creating JSON for file {}!\n{}",
-                                    &path, e
-                                ))
-                                .show_alert()
-                                .unwrap();
+                            ApplicationContext::display_alert(
+                                &self,
+                                "text-diff",
+                                &format!("Error while creating JSON for file {}!\n{}", &path, e),
+                                MessageType::Error,
+                            );
                         }
                     },
                 };
@@ -206,15 +260,11 @@ impl Sandbox for ApplicationContext {
     fn view(&mut self) -> Element<'_, Self::Message> {
         let title = Text::new("text-diff")
             .width(Length::Fill)
-            .size(85)
-            .color([0.5, 0.5, 0.5])
+            .size(80)
             .horizontal_alignment(alignment::Horizontal::Center);
 
         let choose_theme = style::Theme::ALL.iter().fold(
-            Row::new()
-                .width(Length::Fill)
-                .align_items(Alignment::Center)
-                .spacing(10),
+            Row::new().width(Length::Fill).spacing(10),
             |row, theme| {
                 row.push(
                     Radio::new(
@@ -330,15 +380,16 @@ impl Sandbox for ApplicationContext {
                 diff_text = Text::new("No differences detected!")
             }
 
-            let diff_column = self.differences.iter().fold(
-                Column::new().spacing(10),
-                |column, theme| column.push(Text::new(format!("- {}", theme))),
-            );
+            let diff_column = self
+                .differences
+                .iter()
+                .fold(Column::new().spacing(10), |column, theme| {
+                    column.push(Text::new(format!("- {}", theme)))
+                });
 
             let scroll_container = Column::new().width(Length::Fill).push(diff_column);
             let scroll = Scrollable::new(&mut self.scrollable)
-                .push(Container::new(scroll_container)
-                .width(Length::Fill))
+                .push(Container::new(scroll_container).width(Length::Fill))
                 .max_height(150)
                 .style(self.theme);
 
@@ -357,19 +408,19 @@ impl Sandbox for ApplicationContext {
                 .on_press(Message::ExportPressed)
                 .style(self.theme);
 
-                content = content.push(
-                    Column::new()
-                        .width(Length::Fill)
-                        .align_items(Alignment::End)
-                        .spacing(20)
-                        .push(btn_export),
-                );
+                content = content
+                    .push(
+                        Column::new()
+                            .width(Length::Fill)
+                            .align_items(Alignment::End)
+                            .spacing(20)
+                            .push(btn_export),
+                    )
+                    .push(Rule::horizontal(20).style(self.theme));
             }
         }
 
-        content = content
-            .push(Rule::horizontal(20).style(self.theme))
-            .push(choose_theme);
+        content = content.push(choose_theme);
 
         Container::new(content)
             .width(Length::Fill)

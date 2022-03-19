@@ -1084,8 +1084,7 @@ dependencies = [
 [[package]]
 name = "native-dialog"
 version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ab637f328b31bd0855c43bd38a4a4455e74324d9e74e0aac6a803422f43abc6"
+source = "git+https://github.com/CodeDead/native-dialog-rs#bf41d3b80351f8a16c178fbbf3c81e4354069888"
 dependencies = [
  "block",
  "cocoa",
@@ -1524,20 +1523,6 @@ name = "serde"
 version = "1.0.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce31e24b01e1e524df96f1c2fdd054405f8d7376249a5110886fb4b658484789"
-dependencies = [
- "serde_derive",
-]
-
-[[package]]
-name = "serde_derive"
-version = "1.0.136"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08597e7152fcd306f41838ed3e37be9eaeed2b61c42e2117266a554fab4662f9"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "serde_json"
@@ -1656,7 +1641,7 @@ dependencies = [
 
 [[package]]
 name = "text-diff"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "iced",
  "native-dialog",

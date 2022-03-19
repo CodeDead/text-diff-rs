@@ -383,7 +383,7 @@ mod dark {
                     a: 0.8,
                     ..if is_checked { ACTIVE } else { SURFACE }
                 }
-                    .into(),
+                .into(),
                 ..self.active(is_checked)
             }
         }
